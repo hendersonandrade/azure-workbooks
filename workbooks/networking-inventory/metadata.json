@@ -1,0 +1,13 @@
+{
+  "id": "networking-inventory",
+  "title": "Networking & Inventory",
+  "domain": "networking",
+  "version": "1.0.0",
+  "dataSources": [
+    "Azure Resource Graph"
+  ],
+  "rbac": [
+    "Reader"
+  ],
+  "path": "workbooks/networking-inventory"
+}

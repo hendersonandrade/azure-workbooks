@@ -1,0 +1,53 @@
+[
+  {
+    "id": "cost-finops",
+    "title": "Cost & FinOps",
+    "domain": "cost",
+    "dataSources": [
+      "Azure Resource Graph"
+    ],
+    "rbac": [
+      "Reader"
+    ],
+    "path": "workbooks/cost-finops"
+  },
+  {
+    "id": "governance-security",
+    "title": "Governance & Security Posture",
+    "domain": "governance",
+    "dataSources": [
+      "Azure Resource Graph"
+    ],
+    "rbac": [
+      "Reader",
+      "Security Reader"
+    ],
+    "path": "workbooks/governance-security"
+  },
+  {
+    "id": "networking-inventory",
+    "title": "Networking & Inventory",
+    "domain": "networking",
+    "dataSources": [
+      "Azure Resource Graph"
+    ],
+    "rbac": [
+      "Reader"
+    ],
+    "path": "workbooks/networking-inventory"
+  },
+  {
+    "id": "operations-monitoring",
+    "title": "Operations & Monitoring",
+    "domain": "operations",
+    "dataSources": [
+      "Azure Resource Graph",
+      "Log Analytics (optional)"
+    ],
+    "rbac": [
+      "Reader",
+      "Monitoring Reader (optional, for Log Analytics tiles)"
+    ],
+    "path": "workbooks/operations-monitoring"
+  }
+]

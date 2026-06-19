@@ -1,0 +1,25 @@
+name: validate
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Bicep
+        run: |
+          curl -Lo bicep https://github.com/Azure/bicep/releases/latest/download/bicep-linux-x64
+          chmod +x bicep && sudo mv bicep /usr/local/bin/bicep
+          bicep --version
+      - name: Lint workbook JSON
+        shell: pwsh
+        run: ./shared/scripts/Test-Workbooks.ps1
+      - name: Bicep build shared module
+        run: bicep build shared/modules/workbook.test.bicep --stdout > /dev/null
+      - name: Bicep build all workbooks
+        run: |
+          for d in workbooks/*/; do
+            if [ -f "$d/main.bicep" ]; then echo "Building $d"; bicep build "$d/main.bicep" --stdout > /dev/null; fi
+          done

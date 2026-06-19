@@ -1,0 +1,139 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.44.1.10279",
+      "templateHash": "9394043364429579239"
+    }
+  },
+  "parameters": {
+    "displayName": {
+      "type": "string",
+      "defaultValue": "Governance & Security Posture",
+      "metadata": {
+        "description": "Display name shown in the Azure Monitor Workbooks gallery."
+      }
+    },
+    "sourceId": {
+      "type": "string",
+      "defaultValue": "[subscription().id]",
+      "metadata": {
+        "description": "Scope the workbook queries run against. Defaults to the deployment subscription."
+      }
+    }
+  },
+  "variables": {
+    "$fxv#0": "{\n  \"version\": \"Notebook/1.0\",\n  \"items\": [\n    {\n      \"type\": 9,\n      \"content\": {\n        \"version\": \"KqlParameterItem/1.0\",\n        \"parameters\": [\n          {\n            \"id\": \"sub-param\",\n            \"version\": \"KqlParameterItem/1.0\",\n            \"name\": \"Subscriptions\",\n            \"type\": 6,\n            \"isRequired\": true,\n            \"multiSelect\": true,\n            \"quote\": \"'\",\n            \"delimiter\": \",\",\n            \"typeSettings\": { \"additionalResourceOptions\": [\"value::all\"] }\n          }\n        ]\n      }\n    },\n    {\n      \"type\": 1,\n      \"content\": {\n        \"json\": \"## Governance & Security Posture\\nPolicy compliance, Defender for Cloud secure score and recommendations, RBAC assignments, and Key Vault secret/certificate expiry. Runs on Azure Resource Graph (Reader + Security Reader roles).\"\n      }\n    },\n    {\n      \"type\": 3,\n      \"content\": {\n        \"version\": \"KqlItem/1.0\",\n        \"query\": \"policyresources\\n| where type == \\\"microsoft.policyinsights/policystates\\\"\\n| summarize Resources = count() by complianceState = tostring(properties.complianceState)\",\n        \"size\": 0,\n        \"title\": \"Policy compliance by state\",\n        \"queryType\": 1,\n        \"resourceType\": \"microsoft.resourcegraph/resources\",\n        \"crossComponentResources\": [\"{Subscriptions}\"],\n        \"visualization\": \"table\"\n      }\n    },\n    {\n      \"type\": 3,\n      \"content\": {\n        \"version\": \"KqlItem/1.0\",\n        \"query\": \"policyresources\\n| where type == \\\"microsoft.policyinsights/policystates\\\"\\n| where tostring(properties.complianceState) == \\\"NonCompliant\\\"\\n| summarize NonCompliant = count() by initiative = tostring(properties.policySetDefinitionName), policy = tostring(properties.policyDefinitionName)\\n| order by NonCompliant desc\",\n        \"size\": 0,\n        \"title\": \"Non-compliant resources by initiative\",\n        \"queryType\": 1,\n        \"resourceType\": \"microsoft.resourcegraph/resources\",\n        \"crossComponentResources\": [\"{Subscriptions}\"],\n        \"visualization\": \"table\"\n      }\n    },\n    {\n      \"type\": 3,\n      \"content\": {\n        \"version\": \"KqlItem/1.0\",\n        \"query\": \"securityresources\\n| where type == \\\"microsoft.security/securescores\\\"\\n| extend pct = round(100.0 * todouble(properties.score.current) / todouble(properties.score.max), 1)\\n| project subscriptionId, current = properties.score.current, max = properties.score.max, percent = pct\",\n        \"size\": 0,\n        \"title\": \"Defender for Cloud secure score\",\n        \"queryType\": 1,\n        \"resourceType\": \"microsoft.resourcegraph/resources\",\n        \"crossComponentResources\": [\"{Subscriptions}\"],\n        \"visualization\": \"table\"\n      }\n    },\n    {\n      \"type\": 3,\n      \"content\": {\n        \"version\": \"KqlItem/1.0\",\n        \"query\": \"securityresources\\n| where type == \\\"microsoft.security/assessments\\\"\\n| where tostring(properties.status.code) == \\\"Unhealthy\\\"\\n| summarize Affected = count() by recommendation = tostring(properties.displayName), severity = tostring(properties.metadata.severity)\\n| order by Affected desc\",\n        \"size\": 0,\n        \"title\": \"Top Defender recommendations\",\n        \"queryType\": 1,\n        \"resourceType\": \"microsoft.resourcegraph/resources\",\n        \"crossComponentResources\": [\"{Subscriptions}\"],\n        \"visualization\": \"table\"\n      }\n    },\n    {\n      \"type\": 3,\n      \"content\": {\n        \"version\": \"KqlItem/1.0\",\n        \"query\": \"authorizationresources\\n| where type == \\\"microsoft.authorization/roleassignments\\\"\\n| summarize Assignments = count() by principalType = tostring(properties.principalType)\",\n        \"size\": 0,\n        \"title\": \"RBAC role assignments overview\",\n        \"queryType\": 1,\n        \"resourceType\": \"microsoft.resourcegraph/resources\",\n        \"crossComponentResources\": [\"{Subscriptions}\"],\n        \"visualization\": \"table\"\n      }\n    },\n    {\n      \"type\": 3,\n      \"content\": {\n        \"version\": \"KqlItem/1.0\",\n        \"query\": \"resources\\n| where type == \\\"microsoft.keyvault/vaults/secrets\\\" or type == \\\"microsoft.keyvault/vaults/certificates\\\"\\n| extend exp = todatetime(properties.attributes.exp)\\n| where isnotempty(exp) and exp < now(30d)\\n| project name, type, resourceGroup, expiresOn = exp\\n| order by expiresOn asc\",\n        \"size\": 0,\n        \"title\": \"Key Vault secrets/certs nearing expiry (30 days)\",\n        \"queryType\": 1,\n        \"resourceType\": \"microsoft.resourcegraph/resources\",\n        \"crossComponentResources\": [\"{Subscriptions}\"],\n        \"visualization\": \"table\"\n      }\n    }\n  ]\n}\n"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "deploy-governance-security",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "displayName": {
+            "value": "[parameters('displayName')]"
+          },
+          "serializedData": {
+            "value": "[variables('$fxv#0')]"
+          },
+          "sourceId": {
+            "value": "[parameters('sourceId')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.44.1.10279",
+              "templateHash": "13944631468647917588"
+            }
+          },
+          "parameters": {
+            "displayName": {
+              "type": "string",
+              "metadata": {
+                "description": "Display name shown in the Azure Monitor Workbooks gallery."
+              }
+            },
+            "serializedData": {
+              "type": "string",
+              "metadata": {
+                "description": "The serialized workbook JSON content (load with loadTextContent in the caller)."
+              }
+            },
+            "sourceId": {
+              "type": "string",
+              "defaultValue": "Azure Monitor",
+              "metadata": {
+                "description": "Scope the workbook queries against. Use a subscription or resource id; \"Azure Monitor\" for a generic gallery workbook."
+              }
+            },
+            "category": {
+              "type": "string",
+              "defaultValue": "workbook",
+              "metadata": {
+                "description": "Workbook gallery category."
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Deployment location."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Resource tags."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Insights/workbooks",
+              "apiVersion": "2023-06-01",
+              "name": "[guid(resourceGroup().id, parameters('displayName'))]",
+              "location": "[parameters('location')]",
+              "kind": "shared",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "displayName": "[parameters('displayName')]",
+                "serializedData": "[parameters('serializedData')]",
+                "category": "[parameters('category')]",
+                "sourceId": "[parameters('sourceId')]",
+                "version": "Notebook/1.0"
+              }
+            }
+          ],
+          "outputs": {
+            "workbookId": {
+              "type": "string",
+              "metadata": {
+                "description": "Resource id of the deployed workbook."
+              },
+              "value": "[resourceId('Microsoft.Insights/workbooks', guid(resourceGroup().id, parameters('displayName')))]"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "workbookId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'deploy-governance-security'), '2025-04-01').outputs.workbookId.value]"
+    }
+  }
+}

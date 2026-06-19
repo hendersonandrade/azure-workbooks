@@ -1,0 +1,139 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.44.1.10279",
+      "templateHash": "2207199235339760556"
+    }
+  },
+  "parameters": {
+    "displayName": {
+      "type": "string",
+      "defaultValue": "Operations & Monitoring",
+      "metadata": {
+        "description": "Display name shown in the Azure Monitor Workbooks gallery."
+      }
+    },
+    "sourceId": {
+      "type": "string",
+      "defaultValue": "[subscription().id]",
+      "metadata": {
+        "description": "Scope the workbook queries run against. Defaults to the deployment subscription."
+      }
+    }
+  },
+  "variables": {
+    "$fxv#0": "{\n  \"version\": \"Notebook/1.0\",\n  \"items\": [\n    {\n      \"type\": 9,\n      \"content\": {\n        \"version\": \"KqlParameterItem/1.0\",\n        \"parameters\": [\n          {\n            \"id\": \"sub-param\",\n            \"version\": \"KqlParameterItem/1.0\",\n            \"name\": \"Subscriptions\",\n            \"type\": 6,\n            \"isRequired\": true,\n            \"multiSelect\": true,\n            \"quote\": \"'\",\n            \"delimiter\": \",\",\n            \"typeSettings\": { \"additionalResourceOptions\": [\"value::all\"] }\n          },\n          {\n            \"id\": \"ws-param\",\n            \"version\": \"KqlParameterItem/1.0\",\n            \"name\": \"LogAnalyticsWorkspace\",\n            \"label\": \"Log Analytics workspace (optional)\",\n            \"type\": 5,\n            \"isRequired\": false,\n            \"typeSettings\": { \"additionalResourceOptions\": [], \"resourceTypeFilter\": { \"microsoft.operationalinsights/workspaces\": true } }\n          }\n        ]\n      }\n    },\n    {\n      \"type\": 1,\n      \"content\": {\n        \"json\": \"## Operations & Monitoring\\nResource health, VM and AKS inventory, Azure Advisor recommendations, and an optional Log Analytics CPU time-series tile. Runs on Azure Resource Graph (Reader role). The CPU tile requires a Log Analytics workspace selection and the Monitoring Reader role.\"\n      }\n    },\n    {\n      \"type\": 3,\n      \"content\": {\n        \"version\": \"KqlItem/1.0\",\n        \"query\": \"healthresources\\n| where type == \\\"microsoft.resourcehealth/availabilitystatuses\\\"\\n| extend status = tostring(properties.availabilityState)\\n| summarize Resources = count() by status\",\n        \"size\": 0,\n        \"title\": \"Resource health snapshot\",\n        \"queryType\": 1,\n        \"resourceType\": \"microsoft.resourcegraph/resources\",\n        \"crossComponentResources\": [\"{Subscriptions}\"],\n        \"visualization\": \"table\"\n      }\n    },\n    {\n      \"type\": 3,\n      \"content\": {\n        \"version\": \"KqlItem/1.0\",\n        \"query\": \"resources\\n| where type == \\\"microsoft.compute/virtualmachines\\\"\\n| extend powerState = tostring(properties.extended.instanceView.powerState.displayStatus)\\n| summarize Count = count() by powerState, size = tostring(properties.hardwareProfile.vmSize)\\n| order by Count desc\",\n        \"size\": 0,\n        \"title\": \"VM inventory & power state\",\n        \"queryType\": 1,\n        \"resourceType\": \"microsoft.resourcegraph/resources\",\n        \"crossComponentResources\": [\"{Subscriptions}\"],\n        \"visualization\": \"table\"\n      }\n    },\n    {\n      \"type\": 3,\n      \"content\": {\n        \"version\": \"KqlItem/1.0\",\n        \"query\": \"resources\\n| where type == \\\"microsoft.containerservice/managedclusters\\\"\\n| project name, resourceGroup, location, k8sVersion = tostring(properties.kubernetesVersion), provisioning = tostring(properties.provisioningState)\",\n        \"size\": 0,\n        \"title\": \"AKS cluster inventory\",\n        \"queryType\": 1,\n        \"resourceType\": \"microsoft.resourcegraph/resources\",\n        \"crossComponentResources\": [\"{Subscriptions}\"],\n        \"visualization\": \"table\"\n      }\n    },\n    {\n      \"type\": 3,\n      \"content\": {\n        \"version\": \"KqlItem/1.0\",\n        \"query\": \"advisorresources\\n| where type == \\\"microsoft.advisor/recommendations\\\"\\n| summarize Count = count() by category = tostring(properties.category), impact = tostring(properties.impact)\\n| order by Count desc\",\n        \"size\": 0,\n        \"title\": \"Azure Advisor recommendations by category\",\n        \"queryType\": 1,\n        \"resourceType\": \"microsoft.resourcegraph/resources\",\n        \"crossComponentResources\": [\"{Subscriptions}\"],\n        \"visualization\": \"table\"\n      }\n    },\n    {\n      \"type\": 3,\n      \"content\": {\n        \"version\": \"KqlItem/1.0\",\n        \"query\": \"Perf | where ObjectName == 'Processor' and CounterName == '% Processor Time' | summarize avg(CounterValue) by bin(TimeGenerated, 15m), Computer | render timechart\",\n        \"size\": 0,\n        \"title\": \"Avg CPU % (last 24h) — requires Log Analytics workspace + Monitoring Reader\",\n        \"queryType\": 0,\n        \"resourceType\": \"microsoft.operationalinsights/workspaces\",\n        \"crossComponentResources\": [\"{LogAnalyticsWorkspace}\"],\n        \"visualization\": \"timechart\"\n      },\n      \"conditionalVisibility\": { \"parameterName\": \"LogAnalyticsWorkspace\", \"comparison\": \"isNotEqualTo\", \"value\": \"\" }\n    }\n  ]\n}\n"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "deploy-operations-monitoring",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "displayName": {
+            "value": "[parameters('displayName')]"
+          },
+          "serializedData": {
+            "value": "[variables('$fxv#0')]"
+          },
+          "sourceId": {
+            "value": "[parameters('sourceId')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.44.1.10279",
+              "templateHash": "13944631468647917588"
+            }
+          },
+          "parameters": {
+            "displayName": {
+              "type": "string",
+              "metadata": {
+                "description": "Display name shown in the Azure Monitor Workbooks gallery."
+              }
+            },
+            "serializedData": {
+              "type": "string",
+              "metadata": {
+                "description": "The serialized workbook JSON content (load with loadTextContent in the caller)."
+              }
+            },
+            "sourceId": {
+              "type": "string",
+              "defaultValue": "Azure Monitor",
+              "metadata": {
+                "description": "Scope the workbook queries against. Use a subscription or resource id; \"Azure Monitor\" for a generic gallery workbook."
+              }
+            },
+            "category": {
+              "type": "string",
+              "defaultValue": "workbook",
+              "metadata": {
+                "description": "Workbook gallery category."
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Deployment location."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Resource tags."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Insights/workbooks",
+              "apiVersion": "2023-06-01",
+              "name": "[guid(resourceGroup().id, parameters('displayName'))]",
+              "location": "[parameters('location')]",
+              "kind": "shared",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "displayName": "[parameters('displayName')]",
+                "serializedData": "[parameters('serializedData')]",
+                "category": "[parameters('category')]",
+                "sourceId": "[parameters('sourceId')]",
+                "version": "Notebook/1.0"
+              }
+            }
+          ],
+          "outputs": {
+            "workbookId": {
+              "type": "string",
+              "metadata": {
+                "description": "Resource id of the deployed workbook."
+              },
+              "value": "[resourceId('Microsoft.Insights/workbooks', guid(resourceGroup().id, parameters('displayName')))]"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "workbookId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'deploy-operations-monitoring'), '2025-04-01').outputs.workbookId.value]"
+    }
+  }
+}

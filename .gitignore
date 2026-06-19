@@ -1,0 +1,8 @@
+# Bicep / ARM build artifacts that are regenerated
+*.bicep.json
+# Editor / OS
+.vscode/
+.DS_Store
+Thumbs.db
+# PowerShell module cache
+*.psd1.bak

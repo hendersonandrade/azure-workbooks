@@ -1,0 +1,139 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.44.1.10279",
+      "templateHash": "7046460443475354443"
+    }
+  },
+  "parameters": {
+    "displayName": {
+      "type": "string",
+      "defaultValue": "Cost & FinOps",
+      "metadata": {
+        "description": "Display name shown in the Azure Monitor Workbooks gallery."
+      }
+    },
+    "sourceId": {
+      "type": "string",
+      "defaultValue": "[subscription().id]",
+      "metadata": {
+        "description": "Scope the workbook queries run against. Defaults to the deployment subscription."
+      }
+    }
+  },
+  "variables": {
+    "$fxv#0": "{\n  \"version\": \"Notebook/1.0\",\n  \"items\": [\n    {\n      \"type\": 9,\n      \"content\": {\n        \"version\": \"KqlParameterItem/1.0\",\n        \"parameters\": [\n          {\n            \"id\": \"sub-param\",\n            \"version\": \"KqlParameterItem/1.0\",\n            \"name\": \"Subscriptions\",\n            \"type\": 6,\n            \"isRequired\": true,\n            \"multiSelect\": true,\n            \"quote\": \"'\",\n            \"delimiter\": \",\",\n            \"typeSettings\": { \"additionalResourceOptions\": [\"value::all\"] }\n          }\n        ]\n      }\n    },\n    {\n      \"type\": 1,\n      \"content\": {\n        \"json\": \"## Cost & FinOps\\nOrphaned resources, idle spend, tagging hygiene, and a link to live cost analysis via Azure Cost Management. Runs on Azure Resource Graph (Reader role) and Cost Management (Cost Management Reader role).\"\n      }\n    },\n    {\n      \"type\": 3,\n      \"content\": {\n        \"version\": \"KqlItem/1.0\",\n        \"query\": \"resources\\n| where tags == \\\"\\\" or isnull(tags) or array_length(todynamic(tostring(tags))) == 0\\n| summarize Untagged = count() by type\\n| order by Untagged desc\",\n        \"size\": 0,\n        \"title\": \"Untagged resources by type\",\n        \"queryType\": 1,\n        \"resourceType\": \"microsoft.resourcegraph/resources\",\n        \"crossComponentResources\": [\"{Subscriptions}\"],\n        \"visualization\": \"table\"\n      }\n    },\n    {\n      \"type\": 3,\n      \"content\": {\n        \"version\": \"KqlItem/1.0\",\n        \"query\": \"resources\\n| where type == \\\"microsoft.compute/disks\\\"\\n| where tostring(properties.diskState) == \\\"Unattached\\\"\\n| project name, resourceGroup, location, sizeGb = toint(properties.diskSizeGB), sku = tostring(sku.name)\\n| order by sizeGb desc\",\n        \"size\": 0,\n        \"title\": \"Orphaned managed disks (unattached)\",\n        \"queryType\": 1,\n        \"resourceType\": \"microsoft.resourcegraph/resources\",\n        \"crossComponentResources\": [\"{Subscriptions}\"],\n        \"visualization\": \"table\"\n      }\n    },\n    {\n      \"type\": 3,\n      \"content\": {\n        \"version\": \"KqlItem/1.0\",\n        \"query\": \"resources\\n| where type == \\\"microsoft.network/publicipaddresses\\\"\\n| where isnull(properties.ipConfiguration)\\n| project name, resourceGroup, location, sku = tostring(sku.name)\",\n        \"size\": 0,\n        \"title\": \"Unassociated public IPs (idle spend)\",\n        \"queryType\": 1,\n        \"resourceType\": \"microsoft.resourcegraph/resources\",\n        \"crossComponentResources\": [\"{Subscriptions}\"],\n        \"visualization\": \"table\"\n      }\n    },\n    {\n      \"type\": 3,\n      \"content\": {\n        \"version\": \"KqlItem/1.0\",\n        \"query\": \"resources\\n| where type == \\\"microsoft.network/networkinterfaces\\\"\\n| where isnull(properties.virtualMachine)\\n| project name, resourceGroup, location\",\n        \"size\": 0,\n        \"title\": \"Empty NICs (not attached to a VM)\",\n        \"queryType\": 1,\n        \"resourceType\": \"microsoft.resourcegraph/resources\",\n        \"crossComponentResources\": [\"{Subscriptions}\"],\n        \"visualization\": \"table\"\n      }\n    },\n    {\n      \"type\": 3,\n      \"content\": {\n        \"version\": \"KqlItem/1.0\",\n        \"query\": \"resources\\n| where type == \\\"microsoft.compute/virtualmachines\\\"\\n| extend powerState = tostring(properties.extended.instanceView.powerState.displayStatus)\\n| where powerState == \\\"VM stopped\\\"\\n| project name, resourceGroup, location, powerState, size = tostring(properties.hardwareProfile.vmSize)\",\n        \"size\": 0,\n        \"title\": \"Stopped-but-not-deallocated VMs (power state via properties.extended.instanceView.powerState.displayStatus)\",\n        \"queryType\": 1,\n        \"resourceType\": \"microsoft.resourcegraph/resources\",\n        \"crossComponentResources\": [\"{Subscriptions}\"],\n        \"visualization\": \"table\"\n      }\n    },\n    {\n      \"type\": 3,\n      \"content\": {\n        \"version\": \"KqlItem/1.0\",\n        \"query\": \"resources\\n| extend costCenter = tostring(tags[\\\"CostCenter\\\"])\\n| summarize Resources = count() by costCenter = iif(isempty(costCenter), \\\"(untagged)\\\", costCenter)\\n| order by Resources desc\",\n        \"size\": 0,\n        \"title\": \"Inventory by CostCenter tag\",\n        \"queryType\": 1,\n        \"resourceType\": \"microsoft.resourcegraph/resources\",\n        \"crossComponentResources\": [\"{Subscriptions}\"],\n        \"visualization\": \"table\"\n      }\n    },\n    {\n      \"type\": 1,\n      \"content\": {\n        \"json\": \"### Cost trend\\nLive cost time-series is available via Azure Cost Management (requires the Cost Management Reader role). Open [Cost analysis](https://portal.azure.com/#view/Microsoft_Azure_CostManagement/Menu/~/costanalysis) for the selected scope.\"\n      }\n    }\n  ]\n}\n"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "deploy-cost-finops",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "displayName": {
+            "value": "[parameters('displayName')]"
+          },
+          "serializedData": {
+            "value": "[variables('$fxv#0')]"
+          },
+          "sourceId": {
+            "value": "[parameters('sourceId')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.44.1.10279",
+              "templateHash": "13944631468647917588"
+            }
+          },
+          "parameters": {
+            "displayName": {
+              "type": "string",
+              "metadata": {
+                "description": "Display name shown in the Azure Monitor Workbooks gallery."
+              }
+            },
+            "serializedData": {
+              "type": "string",
+              "metadata": {
+                "description": "The serialized workbook JSON content (load with loadTextContent in the caller)."
+              }
+            },
+            "sourceId": {
+              "type": "string",
+              "defaultValue": "Azure Monitor",
+              "metadata": {
+                "description": "Scope the workbook queries against. Use a subscription or resource id; \"Azure Monitor\" for a generic gallery workbook."
+              }
+            },
+            "category": {
+              "type": "string",
+              "defaultValue": "workbook",
+              "metadata": {
+                "description": "Workbook gallery category."
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Deployment location."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Resource tags."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Insights/workbooks",
+              "apiVersion": "2023-06-01",
+              "name": "[guid(resourceGroup().id, parameters('displayName'))]",
+              "location": "[parameters('location')]",
+              "kind": "shared",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "displayName": "[parameters('displayName')]",
+                "serializedData": "[parameters('serializedData')]",
+                "category": "[parameters('category')]",
+                "sourceId": "[parameters('sourceId')]",
+                "version": "Notebook/1.0"
+              }
+            }
+          ],
+          "outputs": {
+            "workbookId": {
+              "type": "string",
+              "metadata": {
+                "description": "Resource id of the deployed workbook."
+              },
+              "value": "[resourceId('Microsoft.Insights/workbooks', guid(resourceGroup().id, parameters('displayName')))]"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "workbookId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'deploy-cost-finops'), '2025-04-01').outputs.workbookId.value]"
+    }
+  }
+}

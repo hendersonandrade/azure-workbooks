@@ -1,0 +1,114 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "sub-param",
+            "version": "KqlParameterItem/1.0",
+            "name": "Subscriptions",
+            "type": 6,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "typeSettings": { "additionalResourceOptions": ["value::all"] }
+          }
+        ]
+      }
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## Cost & FinOps\nOrphaned resources, idle spend, tagging hygiene, and a link to live cost analysis via Azure Cost Management. Runs on Azure Resource Graph (Reader role) and Cost Management (Cost Management Reader role)."
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "resources\n| where isnull(tags) or array_length(bag_keys(tags)) == 0\n| summarize Untagged = count() by type\n| order by Untagged desc",
+        "size": 0,
+        "title": "Untagged resources by type",
+        "queryType": 1,
+        "resourceType": "microsoft.resourcegraph/resources",
+        "crossComponentResources": ["{Subscriptions}"],
+        "visualization": "table"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "resources\n| where type == \"microsoft.compute/disks\"\n| where tostring(properties.diskState) == \"Unattached\"\n| project name, resourceGroup, location, sizeGb = toint(properties.diskSizeGB), sku = tostring(sku.name)\n| order by sizeGb desc",
+        "size": 0,
+        "title": "Orphaned managed disks (unattached)",
+        "queryType": 1,
+        "resourceType": "microsoft.resourcegraph/resources",
+        "crossComponentResources": ["{Subscriptions}"],
+        "visualization": "table"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "resources\n| where type == \"microsoft.network/publicipaddresses\"\n| where isnull(properties.ipConfiguration)\n| project name, resourceGroup, location, sku = tostring(sku.name)",
+        "size": 0,
+        "title": "Unassociated public IPs (idle spend)",
+        "queryType": 1,
+        "resourceType": "microsoft.resourcegraph/resources",
+        "crossComponentResources": ["{Subscriptions}"],
+        "visualization": "table"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "resources\n| where type == \"microsoft.network/networkinterfaces\"\n| where isnull(properties.virtualMachine)\n| project name, resourceGroup, location",
+        "size": 0,
+        "title": "Empty NICs (not attached to a VM)",
+        "queryType": 1,
+        "resourceType": "microsoft.resourcegraph/resources",
+        "crossComponentResources": ["{Subscriptions}"],
+        "visualization": "table"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "resources\n| where type == \"microsoft.compute/virtualmachines\"\n| extend powerState = tostring(properties.extended.instanceView.powerState.displayStatus)\n| where powerState == \"VM stopped\"\n| project name, resourceGroup, location, powerState, size = tostring(properties.hardwareProfile.vmSize)",
+        "size": 0,
+        "title": "Stopped-but-not-deallocated VMs (power state via properties.extended.instanceView.powerState.displayStatus)",
+        "queryType": 1,
+        "resourceType": "microsoft.resourcegraph/resources",
+        "crossComponentResources": ["{Subscriptions}"],
+        "visualization": "table"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "resources\n| extend costCenter = tostring(tags[\"CostCenter\"])\n| summarize Resources = count() by costCenter = iif(isempty(costCenter), \"(untagged)\", costCenter)\n| order by Resources desc",
+        "size": 0,
+        "title": "Inventory by CostCenter tag",
+        "queryType": 1,
+        "resourceType": "microsoft.resourcegraph/resources",
+        "crossComponentResources": ["{Subscriptions}"],
+        "visualization": "table"
+      }
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "### Cost trend\nLive cost time-series is available via Azure Cost Management (requires the Cost Management Reader role). Open [Cost analysis](https://portal.azure.com/#view/Microsoft_Azure_CostManagement/Menu/~/costanalysis) for the selected scope."
+      }
+    }
+  ]
+}

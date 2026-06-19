@@ -1,0 +1,15 @@
+{
+  "id": "operations-monitoring",
+  "title": "Operations & Monitoring",
+  "domain": "operations",
+  "version": "1.0.0",
+  "dataSources": [
+    "Azure Resource Graph",
+    "Log Analytics (optional)"
+  ],
+  "rbac": [
+    "Reader",
+    "Monitoring Reader (optional, for Log Analytics tiles)"
+  ],
+  "path": "workbooks/operations-monitoring"
+}

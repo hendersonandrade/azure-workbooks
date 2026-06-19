@@ -1,0 +1,13 @@
+{
+  "id": "cost-finops",
+  "title": "Cost & FinOps",
+  "domain": "cost",
+  "version": "1.0.0",
+  "dataSources": [
+    "Azure Resource Graph"
+  ],
+  "rbac": [
+    "Reader"
+  ],
+  "path": "workbooks/cost-finops"
+}

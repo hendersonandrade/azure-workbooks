@@ -1,0 +1,14 @@
+{
+  "id": "governance-security",
+  "title": "Governance & Security Posture",
+  "domain": "governance",
+  "version": "1.0.0",
+  "dataSources": [
+    "Azure Resource Graph"
+  ],
+  "rbac": [
+    "Reader",
+    "Security Reader"
+  ],
+  "path": "workbooks/governance-security"
+}

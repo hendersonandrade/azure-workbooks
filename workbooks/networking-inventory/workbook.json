@@ -1,0 +1,82 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "sub-param",
+            "version": "KqlParameterItem/1.0",
+            "name": "Subscriptions",
+            "type": 6,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "typeSettings": { "additionalResourceOptions": ["value::all"] }
+          }
+        ]
+      }
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## Networking & Inventory\nVNet topology, NSG exposure, public-IP surface, and an estate map. Runs on Azure Resource Graph (Reader role)."
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "resources\n| summarize Count = count() by type, location\n| order by Count desc",
+        "size": 0,
+        "title": "Estate map by type",
+        "queryType": 1,
+        "resourceType": "microsoft.resourcegraph/resources",
+        "crossComponentResources": ["{Subscriptions}"],
+        "visualization": "table"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "resources\n| where type == \"microsoft.network/publicipaddresses\"\n| extend ip = tostring(properties.ipAddress), assoc = tostring(properties.ipConfiguration.id)\n| project name, resourceGroup, location, ip, associatedTo = iif(isempty(assoc), \"UNUSED\", assoc)\n| order by associatedTo asc",
+        "size": 0,
+        "title": "Public IP surface",
+        "queryType": 1,
+        "resourceType": "microsoft.resourcegraph/resources",
+        "crossComponentResources": ["{Subscriptions}"],
+        "visualization": "table"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "resources\n| where type == \"microsoft.network/networksecuritygroups\"\n| mv-expand rule = properties.securityRules\n| extend r = rule.properties\n| where tostring(r.direction) == \"Inbound\" and tostring(r.access) == \"Allow\"\n| where tostring(r.sourceAddressPrefix) in (\"*\", \"Internet\", \"0.0.0.0/0\")\n| project nsg = name, resourceGroup, ruleName = tostring(rule.name), port = tostring(r.destinationPortRange), source = tostring(r.sourceAddressPrefix)",
+        "size": 0,
+        "title": "NSG rules allowing broad inbound from Internet",
+        "queryType": 1,
+        "resourceType": "microsoft.resourcegraph/resources",
+        "crossComponentResources": ["{Subscriptions}"],
+        "visualization": "table"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "resources\n| where type == \"microsoft.network/virtualnetworks\"\n| extend addressSpace = tostring(properties.addressSpace.addressPrefixes)\n| extend subnetCount = array_length(properties.subnets), peeringCount = array_length(properties.virtualNetworkPeerings)\n| project name, resourceGroup, location, addressSpace, subnetCount, peeringCount",
+        "size": 0,
+        "title": "VNet/subnet/peering inventory",
+        "queryType": 1,
+        "resourceType": "microsoft.resourcegraph/resources",
+        "crossComponentResources": ["{Subscriptions}"],
+        "visualization": "table"
+      }
+    }
+  ]
+}

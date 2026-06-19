@@ -1,0 +1,105 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "sub-param",
+            "version": "KqlParameterItem/1.0",
+            "name": "Subscriptions",
+            "type": 6,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "typeSettings": { "additionalResourceOptions": ["value::all"] }
+          },
+          {
+            "id": "ws-param",
+            "version": "KqlParameterItem/1.0",
+            "name": "LogAnalyticsWorkspace",
+            "label": "Log Analytics workspace (optional)",
+            "type": 5,
+            "isRequired": false,
+            "typeSettings": { "additionalResourceOptions": [], "resourceTypeFilter": { "microsoft.operationalinsights/workspaces": true } }
+          }
+        ]
+      }
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## Operations & Monitoring\nResource health, VM and AKS inventory, Azure Advisor recommendations, and an optional Log Analytics CPU time-series tile. Runs on Azure Resource Graph (Reader role). The CPU tile requires a Log Analytics workspace selection and the Monitoring Reader role."
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "healthresources\n| where type == \"microsoft.resourcehealth/availabilitystatuses\"\n| extend status = tostring(properties.availabilityState)\n| summarize Resources = count() by status",
+        "size": 0,
+        "title": "Resource health snapshot",
+        "queryType": 1,
+        "resourceType": "microsoft.resourcegraph/resources",
+        "crossComponentResources": ["{Subscriptions}"],
+        "visualization": "table"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "resources\n| where type == \"microsoft.compute/virtualmachines\"\n| extend powerState = tostring(properties.extended.instanceView.powerState.displayStatus)\n| summarize Count = count() by powerState, size = tostring(properties.hardwareProfile.vmSize)\n| order by Count desc",
+        "size": 0,
+        "title": "VM inventory & power state",
+        "queryType": 1,
+        "resourceType": "microsoft.resourcegraph/resources",
+        "crossComponentResources": ["{Subscriptions}"],
+        "visualization": "table"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "resources\n| where type == \"microsoft.containerservice/managedclusters\"\n| project name, resourceGroup, location, k8sVersion = tostring(properties.kubernetesVersion), provisioning = tostring(properties.provisioningState)",
+        "size": 0,
+        "title": "AKS cluster inventory",
+        "queryType": 1,
+        "resourceType": "microsoft.resourcegraph/resources",
+        "crossComponentResources": ["{Subscriptions}"],
+        "visualization": "table"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "advisorresources\n| where type == \"microsoft.advisor/recommendations\"\n| summarize Count = count() by category = tostring(properties.category), impact = tostring(properties.impact)\n| order by Count desc",
+        "size": 0,
+        "title": "Azure Advisor recommendations by category",
+        "queryType": 1,
+        "resourceType": "microsoft.resourcegraph/resources",
+        "crossComponentResources": ["{Subscriptions}"],
+        "visualization": "table"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "Perf | where ObjectName == 'Processor' and CounterName == '% Processor Time' | summarize avg(CounterValue) by bin(TimeGenerated, 15m), Computer | render timechart",
+        "size": 0,
+        "title": "Avg CPU % (last 24h) — requires Log Analytics workspace + Monitoring Reader",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "crossComponentResources": ["{LogAnalyticsWorkspace}"],
+        "visualization": "timechart"
+      },
+      "conditionalVisibility": { "parameterName": "LogAnalyticsWorkspace", "comparison": "isNotEqualTo", "value": "" }
+    }
+  ]
+}

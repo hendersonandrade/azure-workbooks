@@ -1,0 +1,108 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "sub-param",
+            "version": "KqlParameterItem/1.0",
+            "name": "Subscriptions",
+            "type": 6,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "typeSettings": { "additionalResourceOptions": ["value::all"] }
+          }
+        ]
+      }
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## Governance & Security Posture\nPolicy compliance, Defender for Cloud secure score and recommendations, RBAC assignments, and Key Vault secret/certificate expiry. Runs on Azure Resource Graph (Reader + Security Reader roles)."
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "policyresources\n| where type == \"microsoft.policyinsights/policystates\"\n| summarize Resources = count() by complianceState = tostring(properties.complianceState)",
+        "size": 0,
+        "title": "Policy compliance by state",
+        "queryType": 1,
+        "resourceType": "microsoft.resourcegraph/resources",
+        "crossComponentResources": ["{Subscriptions}"],
+        "visualization": "table"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "policyresources\n| where type == \"microsoft.policyinsights/policystates\"\n| where tostring(properties.complianceState) == \"NonCompliant\"\n| summarize NonCompliant = count() by initiative = tostring(properties.policySetDefinitionName), policy = tostring(properties.policyDefinitionName)\n| order by NonCompliant desc",
+        "size": 0,
+        "title": "Non-compliant resources by initiative",
+        "queryType": 1,
+        "resourceType": "microsoft.resourcegraph/resources",
+        "crossComponentResources": ["{Subscriptions}"],
+        "visualization": "table"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "securityresources\n| where type == \"microsoft.security/securescores\"\n| extend pct = round(100.0 * todouble(properties.score.current) / todouble(properties.score.max), 1)\n| project subscriptionId, current = toint(properties.score.current), max = toint(properties.score.max), percent = pct",
+        "size": 0,
+        "title": "Defender for Cloud secure score",
+        "queryType": 1,
+        "resourceType": "microsoft.resourcegraph/resources",
+        "crossComponentResources": ["{Subscriptions}"],
+        "visualization": "table"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "securityresources\n| where type == \"microsoft.security/assessments\"\n| where tostring(properties.status.code) == \"Unhealthy\"\n| summarize Affected = count() by recommendation = tostring(properties.displayName), severity = tostring(properties.metadata.severity)\n| order by Affected desc",
+        "size": 0,
+        "title": "Top Defender recommendations",
+        "queryType": 1,
+        "resourceType": "microsoft.resourcegraph/resources",
+        "crossComponentResources": ["{Subscriptions}"],
+        "visualization": "table"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "authorizationresources\n| where type == \"microsoft.authorization/roleassignments\"\n| summarize Assignments = count() by principalType = tostring(properties.principalType)",
+        "size": 0,
+        "title": "RBAC role assignments overview",
+        "queryType": 1,
+        "resourceType": "microsoft.resourcegraph/resources",
+        "crossComponentResources": ["{Subscriptions}"],
+        "visualization": "table"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "resources\n| where type == \"microsoft.keyvault/vaults/secrets\" or type == \"microsoft.keyvault/vaults/certificates\"\n| extend exp = todatetime(properties.attributes.exp)\n| where isnotempty(exp) and exp < now(30d)\n| project name, type, resourceGroup, expiresOn = exp\n| order by expiresOn asc",
+        "size": 0,
+        "title": "Key Vault secrets/certs nearing expiry (30 days)",
+        "queryType": 1,
+        "resourceType": "microsoft.resourcegraph/resources",
+        "crossComponentResources": ["{Subscriptions}"],
+        "visualization": "table"
+      }
+    }
+  ]
+}
